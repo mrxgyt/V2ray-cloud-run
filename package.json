@@ -1,0 +1,17 @@
+{
+  "name": "v2ray-config-panel",
+  "version": "1.0.0",
+  "description": "Web panel to generate V2Ray/Xray server configs and client share links (VLESS/VMess/Trojan, WS/TCP/gRPC/H2, TLS/REALITY)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3"
+  }
+}
