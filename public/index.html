@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>V2Ray / Xray Config Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0b0f17; color: #e5e7eb; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; }
+    .input, select, textarea {
+      background: #0f172a; border: 1px solid #1f2937; color: #e5e7eb;
+      border-radius: 8px; padding: 8px 10px; width: 100%; font-size: 14px;
+    }
+    .input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; }
+    .btn { background: #2563eb; color: white; padding: 8px 14px; border-radius: 8px; font-size: 14px; }
+    .btn:hover { background: #1d4ed8; }
+    .btn-ghost { background: #1f2937; color: #e5e7eb; padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+    .btn-ghost:hover { background: #374151; }
+    .btn-danger { background: #b91c1c; color: white; padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+    .btn-danger:hover { background: #991b1b; }
+    .label { font-size: 12px; color: #9ca3af; margin-bottom: 4px; display: block; }
+    .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .row-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .pill { background: #1f2937; padding: 2px 8px; border-radius: 999px; font-size: 11px; color: #93c5fd; }
+    pre { background: #0f172a; border: 1px solid #1f2937; border-radius: 8px; padding: 12px; font-size: 12px; overflow:auto; max-height: 360px; }
+    .tab { padding: 8px 12px; border-radius: 8px; font-size: 13px; background: #0f172a; border: 1px solid #1f2937; cursor: pointer; }
+    .tab.active { background: #2563eb; border-color: #2563eb; color: white; }
+    .item { padding: 10px 12px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+    .item:hover { background: #0f172a; }
+    .item.active { background: #0f172a; border-color: #2563eb; }
+    .hidden { display: none !important; }
+    a.link { color: #60a5fa; word-break: break-all; }
+    .badge { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #1f2937; color: #9ca3af; text-transform: uppercase; }
+    .copy-ok { color: #34d399 !important; }
+  </style>
+</head>
+<body>
+
+<div class="max-w-7xl mx-auto p-4 md:p-6">
+  <header class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">V2Ray / Xray Config Panel</h1>
+      <p class="text-sm text-gray-400">Генерация серверных конфигов и клиентских ссылок (VLESS · VMess · Trojan)</p>
+    </div>
+    <span class="pill">single-tenant</span>
+  </header>
+
+  <div class="grid md:grid-cols-[280px_1fr] gap-4">
+
+    <!-- Sidebar -->
+    <aside class="card p-3">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-300">Конфигурации</h2>
+        <button id="newBtn" class="btn-ghost">+ Новая</button>
+      </div>
+      <div id="list" class="space-y-1 max-h-[70vh] overflow-auto"></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="space-y-4">
+
+      <!-- Tabs -->
+      <div class="flex gap-2">
+        <div class="tab active" data-tab="form">Параметры</div>
+        <div class="tab" data-tab="server">Серверный config.json</div>
+        <div class="tab" data-tab="client">Клиентская ссылка / QR</div>
+      </div>
+
+      <!-- Form -->
+      <section id="tab-form" class="card p-4 space-y-4">
+        <div class="row-3">
+          <div>
+            <label class="label">Название</label>
+            <input class="input" id="f-name" placeholder="my-server-1" />
+          </div>
+          <div>
+            <label class="label">Протокол</label>
+            <select id="f-protocol">
+              <option value="vless">VLESS</option>
+              <option value="vmess">VMess</option>
+              <option value="trojan">Trojan</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Транспорт</label>
+            <select id="f-network">
+              <option value="tcp">TCP</option>
+              <option value="ws">WebSocket</option>
+              <option value="grpc">gRPC</option>
+              <option value="h2">HTTP/2</option>
+              <option value="kcp">mKCP</option>
+              <option value="quic">QUIC</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row-3">
+          <div>
+            <label class="label">Адрес (домен или IP)</label>
+            <input class="input" id="f-address" placeholder="example.com" />
+          </div>
+          <div>
+            <label class="label">Порт</label>
+            <input class="input" id="f-port" type="number" value="443" />
+          </div>
+          <div>
+            <label class="label">Безопасность</label>
+            <select id="f-security">
+              <option value="none">none</option>
+              <option value="tls">TLS</option>
+              <option value="reality">REALITY (только VLESS+TCP)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Auth row -->
+        <div class="row" id="row-vless-vmess">
+          <div>
+            <label class="label">UUID</label>
+            <div class="flex gap-2">
+              <input class="input" id="f-uuid" />
+              <button class="btn-ghost" id="genUuid">↻</button>
+            </div>
+          </div>
+          <div id="row-vmess-aid" class="hidden">
+            <label class="label">AlterId (VMess)</label>
+            <input class="input" id="f-alterId" type="number" value="0" />
+          </div>
+          <div id="row-vless-flow" class="hidden">
+            <label class="label">Flow (VLESS)</label>
+            <select id="f-flow">
+              <option value="">(none)</option>
+              <option value="xtls-rprx-vision">xtls-rprx-vision</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row hidden" id="row-trojan">
+          <div>
+            <label class="label">Trojan password</label>
+            <div class="flex gap-2">
+              <input class="input" id="f-password" />
+              <button class="btn-ghost" id="genPass">↻</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transport-specific -->
+        <div class="row hidden" id="row-ws-h2">
+          <div>
+            <label class="label">Path</label>
+            <input class="input" id="f-path" placeholder="/yourpath" />
+          </div>
+          <div>
+            <label class="label">Host header (опц.)</label>
+            <input class="input" id="f-host" placeholder="example.com" />
+          </div>
+        </div>
+
+        <div class="row hidden" id="row-grpc">
+          <div>
+            <label class="label">serviceName</label>
+            <input class="input" id="f-serviceName" placeholder="grpc-svc" />
+          </div>
+          <div>
+            <label class="label">gRPC mode</label>
+            <select id="f-grpcMode">
+              <option value="gun">gun</option>
+              <option value="multi">multi</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row hidden" id="row-tcp">
+          <div>
+            <label class="label">TCP header type</label>
+            <select id="f-headerType-tcp">
+              <option value="none">none</option>
+              <option value="http">http (camouflage)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row hidden" id="row-kcpquic">
+          <div>
+            <label class="label">Header type</label>
+            <select id="f-headerType-kq">
+              <option value="none">none</option>
+              <option value="srtp">srtp</option>
+              <option value="utp">utp</option>
+              <option value="wechat-video">wechat-video</option>
+              <option value="dtls">dtls</option>
+              <option value="wireguard">wireguard</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TLS section -->
+        <div class="hidden" id="sec-tls">
+          <h3 class="text-sm font-semibold text-gray-300 mb-2">TLS</h3>
+          <div class="row-3">
+            <div>
+              <label class="label">SNI</label>
+              <input class="input" id="f-sni" placeholder="example.com" />
+            </div>
+            <div>
+              <label class="label">ALPN (csv)</label>
+              <input class="input" id="f-alpn" placeholder="h2,http/1.1" />
+            </div>
+            <div>
+              <label class="label">Fingerprint</label>
+              <select id="f-fingerprint">
+                <option value="chrome">chrome</option>
+                <option value="firefox">firefox</option>
+                <option value="safari">safari</option>
+                <option value="ios">ios</option>
+                <option value="android">android</option>
+                <option value="edge">edge</option>
+                <option value="random">random</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-3">
+            <label class="inline-flex items-center gap-2 text-sm text-gray-300">
+              <input type="checkbox" id="f-allowInsecure" /> allowInsecure (не для прода)
+            </label>
+          </div>
+        </div>
+
+        <!-- REALITY section -->
+        <div class="hidden" id="sec-reality">
+          <h3 class="text-sm font-semibold text-gray-300 mb-2">REALITY</h3>
+          <div class="row-3">
+            <div>
+              <label class="label">dest</label>
+              <input class="input" id="f-realityDest" placeholder="www.microsoft.com:443" />
+            </div>
+            <div>
+              <label class="label">serverNames (csv)</label>
+              <input class="input" id="f-realityServerNames" placeholder="www.microsoft.com" />
+            </div>
+            <div>
+              <label class="label">SNI / Fingerprint</label>
+              <div class="flex gap-2">
+                <input class="input" id="f-sni-reality" placeholder="www.microsoft.com" />
+                <select id="f-fingerprint-reality" class="!w-32">
+                  <option value="chrome">chrome</option>
+                  <option value="firefox">firefox</option>
+                  <option value="safari">safari</option>
+                  <option value="ios">ios</option>
+                  <option value="android">android</option>
+                  <option value="edge">edge</option>
+                  <option value="random">random</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row-3 mt-3">
+            <div>
+              <label class="label">Private Key (server)</label>
+              <input class="input" id="f-realityPrivateKey" />
+            </div>
+            <div>
+              <label class="label">Public Key (client)</label>
+              <input class="input" id="f-realityPublicKey" />
+            </div>
+            <div class="flex items-end gap-2">
+              <button class="btn-ghost" id="genReality">↻ keys</button>
+              <div class="flex-1">
+                <label class="label">Short ID</label>
+                <div class="flex gap-2">
+                  <input class="input" id="f-realityShortId" />
+                  <button class="btn-ghost" id="genShortId">↻</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button class="btn" id="saveBtn">Сохранить</button>
+          <button class="btn-ghost" id="previewBtn">Предпросмотр</button>
+          <button class="btn-danger ml-auto hidden" id="deleteBtn">Удалить</button>
+        </div>
+      </section>
+
+      <!-- Server config -->
+      <section id="tab-server" class="card p-4 hidden space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-300">Серверный config.json (Xray-core)</h3>
+          <div class="flex gap-2">
+            <button class="btn-ghost" id="copyServer">Копировать</button>
+            <button class="btn-ghost" id="downloadServer">Скачать</button>
+          </div>
+        </div>
+        <pre id="serverJson">—</pre>
+        <p class="text-xs text-gray-500">
+          Если выбран TLS — подмените пути к сертификатам Let's Encrypt в <code>certificates[]</code>.
+          REALITY-конфиг работает в Xray-core (xray run -config config.json).
+        </p>
+      </section>
+
+      <!-- Client link -->
+      <section id="tab-client" class="card p-4 hidden space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-300">Клиентская ссылка</h3>
+          <div class="flex gap-2">
+            <button class="btn-ghost" id="copyLink">Копировать ссылку</button>
+          </div>
+        </div>
+        <a id="shareLink" class="link text-sm" target="_blank">—</a>
+        <div class="flex flex-col items-start gap-2 mt-2">
+          <span class="text-xs text-gray-400">QR (импорт в v2rayN, v2rayNG, Streisand, Hiddify, NekoBox):</span>
+          <img id="qr" alt="qr" class="rounded bg-white p-2" width="280" height="280" />
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+
+let configs = [];
+let currentId = null;
+
+function setTab(name) {
+  $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  ['form','server','client'].forEach(n => $('#tab-' + n).classList.toggle('hidden', n !== name));
+}
+$$('.tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+
+function readForm() {
+  const protocol = $('#f-protocol').value;
+  const network  = $('#f-network').value;
+  const security = $('#f-security').value;
+  const c = {
+    name: $('#f-name').value || 'config',
+    protocol, address: $('#f-address').value.trim(),
+    port: parseInt($('#f-port').value, 10) || 443,
+    network, security,
+    uuid: $('#f-uuid').value.trim() || undefined,
+    password: $('#f-password').value.trim() || undefined,
+    alterId: parseInt($('#f-alterId').value, 10) || 0,
+    flow: $('#f-flow').value,
+    path: $('#f-path').value.trim(),
+    host: $('#f-host').value.trim(),
+    serviceName: $('#f-serviceName').value.trim(),
+    grpcMode: $('#f-grpcMode').value,
+    headerType: (network === 'tcp' ? $('#f-headerType-tcp').value : (network === 'kcp' || network === 'quic') ? $('#f-headerType-kq').value : 'none'),
+    sni: (security === 'reality' ? $('#f-sni-reality').value : $('#f-sni').value).trim(),
+    alpn: $('#f-alpn').value.trim(),
+    fingerprint: (security === 'reality' ? $('#f-fingerprint-reality').value : $('#f-fingerprint').value),
+    allowInsecure: $('#f-allowInsecure').checked,
+    realityDest: $('#f-realityDest').value.trim(),
+    realityServerNames: $('#f-realityServerNames').value.split(',').map(s => s.trim()).filter(Boolean),
+    realityPrivateKey: $('#f-realityPrivateKey').value.trim(),
+    realityPublicKey: $('#f-realityPublicKey').value.trim(),
+    realityShortId: $('#f-realityShortId').value.trim(),
+  };
+  return c;
+}
+
+function fillForm(c) {
+  c = c || {};
+  $('#f-name').value = c.name || '';
+  $('#f-protocol').value = c.protocol || 'vless';
+  $('#f-network').value = c.network || 'tcp';
+  $('#f-address').value = c.address || '';
+  $('#f-port').value = c.port || 443;
+  $('#f-security').value = c.security || 'none';
+  $('#f-uuid').value = c.uuid || '';
+  $('#f-password').value = c.password || '';
+  $('#f-alterId').value = c.alterId || 0;
+  $('#f-flow').value = c.flow || '';
+  $('#f-path').value = c.path || '';
+  $('#f-host').value = c.host || '';
+  $('#f-serviceName').value = c.serviceName || '';
+  $('#f-grpcMode').value = c.grpcMode || 'gun';
+  $('#f-headerType-tcp').value = c.headerType || 'none';
+  $('#f-headerType-kq').value = c.headerType || 'none';
+  $('#f-sni').value = c.sni || '';
+  $('#f-sni-reality').value = c.sni || (c.realityServerNames || [])[0] || '';
+  $('#f-alpn').value = c.alpn || '';
+  $('#f-fingerprint').value = c.fingerprint || 'chrome';
+  $('#f-fingerprint-reality').value = c.fingerprint || 'chrome';
+  $('#f-allowInsecure').checked = !!c.allowInsecure;
+  $('#f-realityDest').value = c.realityDest || '';
+  $('#f-realityServerNames').value = (c.realityServerNames || []).join(', ');
+  $('#f-realityPrivateKey').value = c.realityPrivateKey || '';
+  $('#f-realityPublicKey').value = c.realityPublicKey || '';
+  $('#f-realityShortId').value = c.realityShortId || '';
+  updateVisibility();
+}
+
+function updateVisibility() {
+  const protocol = $('#f-protocol').value;
+  const network  = $('#f-network').value;
+  const security = $('#f-security').value;
+
+  $('#row-vless-vmess').classList.toggle('hidden', protocol === 'trojan');
+  $('#row-trojan').classList.toggle('hidden', protocol !== 'trojan');
+  $('#row-vmess-aid').classList.toggle('hidden', protocol !== 'vmess');
+  $('#row-vless-flow').classList.toggle('hidden', protocol !== 'vless');
+
+  $('#row-ws-h2').classList.toggle('hidden', !(network === 'ws' || network === 'h2'));
+  $('#row-grpc').classList.toggle('hidden', network !== 'grpc');
+  $('#row-tcp').classList.toggle('hidden', network !== 'tcp');
+  $('#row-kcpquic').classList.toggle('hidden', !(network === 'kcp' || network === 'quic'));
+
+  $('#sec-tls').classList.toggle('hidden', security !== 'tls');
+  $('#sec-reality').classList.toggle('hidden', security !== 'reality');
+
+  if (security === 'reality' && (protocol !== 'vless' || network !== 'tcp')) {
+    $('#f-protocol').value = 'vless';
+    $('#f-network').value = 'tcp';
+  }
+}
+['#f-protocol', '#f-network', '#f-security'].forEach(sel => $(sel).addEventListener('change', updateVisibility));
+
+async function api(method, url, body) {
+  const r = await fetch(url, {
+    method, headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function loadList() {
+  configs = await api('GET', '/api/configs');
+  const list = $('#list');
+  list.innerHTML = '';
+  if (configs.length === 0) {
+    list.innerHTML = '<div class="text-xs text-gray-500 px-2 py-3">Пусто. Нажмите «+ Новая».</div>';
+    return;
+  }
+  for (const c of configs) {
+    const el = document.createElement('div');
+    el.className = 'item' + (c.id === currentId ? ' active' : '');
+    el.innerHTML = `
+      <div class="flex items-center justify-between gap-2">
+        <div class="font-medium text-sm truncate">${escapeHtml(c.name)}</div>
+        <span class="badge">${c.protocol}</span>
+      </div>
+      <div class="text-xs text-gray-500 truncate">${escapeHtml(c.address || '—')}:${c.port}</div>
+      <div class="text-[10px] text-gray-600 mt-1">${c.network} · ${c.security}</div>
+    `;
+    el.addEventListener('click', () => selectConfig(c.id));
+    list.appendChild(el);
+  }
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+async function selectConfig(id) {
+  currentId = id;
+  const c = configs.find(x => x.id === id);
+  fillForm(c);
+  $('#deleteBtn').classList.remove('hidden');
+  await refreshOutput();
+  await loadList();
+}
+
+function newConfig() {
+  currentId = null;
+  fillForm({ name: 'new-config', protocol: 'vless', network: 'tcp', security: 'reality', port: 443 });
+  $('#deleteBtn').classList.add('hidden');
+  $('#serverJson').textContent = '—';
+  $('#shareLink').textContent = '—';
+  $('#shareLink').removeAttribute('href');
+  $('#qr').removeAttribute('src');
+  loadList();
+}
+
+async function refreshOutput(fromServer) {
+  if (currentId && fromServer !== false) {
+    const [serverCfg, link] = await Promise.all([
+      fetch(`/api/configs/${currentId}/server`).then(r => r.text()),
+      api('GET', `/api/configs/${currentId}/link`),
+    ]);
+    $('#serverJson').textContent = serverCfg;
+    $('#shareLink').textContent = link.link;
+    $('#shareLink').href = link.link;
+    $('#qr').src = link.qr;
+  } else {
+    const data = await api('POST', '/api/preview', readForm());
+    $('#serverJson').textContent = JSON.stringify(data.server, null, 2);
+    $('#shareLink').textContent = data.link;
+    $('#shareLink').href = data.link;
+    $('#qr').src = data.qr;
+  }
+}
+
+$('#newBtn').addEventListener('click', newConfig);
+
+$('#saveBtn').addEventListener('click', async () => {
+  const body = readForm();
+  let saved;
+  if (currentId) {
+    saved = await api('PUT', '/api/configs/' + currentId, body);
+  } else {
+    saved = await api('POST', '/api/configs', body);
+    currentId = saved.id;
+  }
+  fillForm(saved);
+  await loadList();
+  await refreshOutput(true);
+  setTab('server');
+});
+
+$('#previewBtn').addEventListener('click', () => refreshOutput(false));
+
+$('#deleteBtn').addEventListener('click', async () => {
+  if (!currentId) return;
+  if (!confirm('Удалить конфиг?')) return;
+  await api('DELETE', '/api/configs/' + currentId);
+  currentId = null;
+  newConfig();
+});
+
+$('#genUuid').addEventListener('click', async () => {
+  const r = await api('POST', '/api/uuid');
+  $('#f-uuid').value = r.uuid;
+});
+$('#genPass').addEventListener('click', () => {
+  const arr = new Uint8Array(16); crypto.getRandomValues(arr);
+  $('#f-password').value = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+});
+$('#genReality').addEventListener('click', async () => {
+  const r = await api('POST', '/api/x25519');
+  $('#f-realityPrivateKey').value = r.privateKey;
+  $('#f-realityPublicKey').value = r.publicKey;
+});
+$('#genShortId').addEventListener('click', async () => {
+  const r = await api('POST', '/api/shortid', { length: 8 });
+  $('#f-realityShortId').value = r.shortId;
+});
+
+$('#copyServer').addEventListener('click', async () => {
+  await navigator.clipboard.writeText($('#serverJson').textContent);
+  flash('#copyServer', 'Скопировано');
+});
+$('#copyLink').addEventListener('click', async () => {
+  await navigator.clipboard.writeText($('#shareLink').textContent);
+  flash('#copyLink', 'Скопировано');
+});
+$('#downloadServer').addEventListener('click', () => {
+  if (!currentId) return alert('Сначала сохраните конфиг.');
+  window.location.href = `/api/configs/${currentId}/server?download=1`;
+});
+
+function flash(sel, text) {
+  const el = $(sel); const old = el.textContent;
+  el.textContent = text; el.classList.add('copy-ok');
+  setTimeout(() => { el.textContent = old; el.classList.remove('copy-ok'); }, 1200);
+}
+
+(async function init() {
+  await loadList();
+  if (configs.length > 0) selectConfig(configs[0].id);
+  else newConfig();
+})();
+</script>
+</body>
+</html>
