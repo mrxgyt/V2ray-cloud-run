@@ -20,10 +20,14 @@ function getConfig() {
 }
 
 function getDomain() {
-  return process.env.REPLIT_DEV_DOMAIN ||
-    process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co' ||
+  return process.env.DOMAIN ||
+    process.env.NORTHFLANK_APP_DOMAIN ||
+    process.env.REPLIT_DEV_DOMAIN ||
+    (process.env.REPL_SLUG && process.env.REPL_OWNER
+      ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+      : null) ||
     process.env.HOSTNAME ||
-    'your-domain.repl.co';
+    'your-domain.example.com';
 }
 
 app.get('/api/config', (req, res) => {
