@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V2Ray Control Panel</title>
+  <meta name="description" content="V2Ray VLESS WebSocket management panel — monitor your proxy server, copy connection links and run speed tests." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="15" stroke="url(#grad1)" stroke-width="2"/>
+            <path d="M8 16 L13 10 L20 22 L24 16" stroke="url(#grad1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="grad1" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#6c63ff"/>
+                <stop offset="100%" stop-color="#00d4ff"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">V2Ray Panel</h1>
+          <p class="header-sub">Cloud Run Dashboard</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-badge" id="statusBadge">
+          <span class="status-dot"></span>
+          <span id="statusText">Checking…</span>
+        </div>
+        <button class="btn-icon" id="refreshBtn" title="Refresh">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-card" id="statProtocol">
+        <div class="stat-icon purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">Protocol</div>
+          <div class="stat-value" id="valProtocol">—</div>
+        </div>
+      </div>
+      <div class="stat-card" id="statNetwork">
+        <div class="stat-icon cyan">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">Network</div>
+          <div class="stat-value" id="valNetwork">—</div>
+        </div>
+      </div>
+      <div class="stat-card" id="statPort">
+        <div class="stat-icon green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">TLS Port</div>
+          <div class="stat-value" id="valPort">443</div>
+        </div>
+      </div>
+      <div class="stat-card" id="statPath">
+        <div class="stat-icon orange">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">WS Path</div>
+          <div class="stat-value mono" id="valPath">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="main-grid">
+      <!-- Connection Card -->
+      <div class="card connection-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Connection Info
+          </h2>
+        </div>
+
+        <div class="info-block">
+          <div class="info-row">
+            <span class="info-label">Domain</span>
+            <span class="info-val mono" id="infoDomain">Loading…</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">UUID</span>
+            <div class="info-val-wrap">
+              <span class="info-val mono uuid-hidden" id="infoUuid">••••••••-••••-••••-••••-••••••••••••</span>
+              <button class="btn-tiny" id="toggleUuid" title="Show/Hide UUID">👁</button>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Encryption</span>
+            <span class="info-val">none</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Security</span>
+            <span class="info-val tag-tls">TLS</span>
+          </div>
+        </div>
+
+        <div class="vless-block">
+          <div class="vless-header">
+            <span class="vless-label">VLESS Link</span>
+            <button class="btn-copy" id="copyVless">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+          <div class="vless-text mono" id="vlessLink">Loading…</div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="qr-section">
+          <div class="qr-label">QR Code for mobile import</div>
+          <div class="qr-wrap" id="qrWrap">
+            <canvas id="qrCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="right-col">
+        <!-- Speed Test Card -->
+        <div class="card speedtest-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Speed Test
+            </h2>
+            <button class="btn-primary" id="runSpeedTest">Run Test</button>
+          </div>
+
+          <div class="gauge-row">
+            <div class="gauge-wrap">
+              <canvas id="gaugeCanvas" width="180" height="100"></canvas>
+              <div class="gauge-value" id="gaugeVal">—</div>
+              <div class="gauge-unit">Mbps</div>
+            </div>
+            <div class="speed-stats">
+              <div class="speed-stat-row">
+                <span class="speed-stat-label">Download</span>
+                <span class="speed-stat-val" id="speedDown">—</span>
+              </div>
+              <div class="speed-stat-row">
+                <span class="speed-stat-label">Duration</span>
+                <span class="speed-stat-val" id="speedDur">—</span>
+              </div>
+              <div class="speed-stat-row">
+                <span class="speed-stat-label">Ping</span>
+                <span class="speed-stat-val" id="speedPing">—</span>
+              </div>
+              <div class="speed-stat-row">
+                <span class="speed-stat-label">Data</span>
+                <span class="speed-stat-val" id="speedBytes">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="progress-bar-wrap" id="progressWrap" style="display:none">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-label">Testing…</span>
+          </div>
+        </div>
+
+        <!-- Import Configs -->
+        <div class="card import-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Import Configs
+            </h2>
+          </div>
+          <div class="import-grid">
+            <button class="import-btn" id="copyV2rayN" data-app="v2rayN">
+              <span class="import-icon">📋</span>
+              <span>Copy for v2rayN</span>
+            </button>
+            <button class="import-btn" id="copyClash" data-app="clash">
+              <span class="import-icon">⚡</span>
+              <span>Clash Meta</span>
+            </button>
+            <button class="import-btn" id="copySingBox" data-app="singbox">
+              <span class="import-icon">📦</span>
+              <span>Sing-Box</span>
+            </button>
+            <button class="import-btn" id="downloadQR" data-app="qr">
+              <span class="import-icon">🖼</span>
+              <span>Download QR</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Server Info -->
+        <div class="card server-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              Server Details
+            </h2>
+          </div>
+          <div class="server-grid" id="serverGrid">
+            <div class="server-item"><span class="server-key">Host</span><span class="server-val mono" id="srvHost">—</span></div>
+            <div class="server-item"><span class="server-key">Internal Port</span><span class="server-val mono" id="srvPort">—</span></div>
+            <div class="server-item"><span class="server-key">Protocol</span><span class="server-val" id="srvProto">—</span></div>
+            <div class="server-item"><span class="server-key">Transport</span><span class="server-val" id="srvNet">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>V2Ray Panel · Cloud Run Edition</span>
+      <span id="footerTs"></span>
+    </footer>
+  </div>
+
+  <!-- QR lib -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
